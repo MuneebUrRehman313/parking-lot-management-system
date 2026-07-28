@@ -8,6 +8,8 @@ import com.muneeb.parkinglot.entity.Vehicle;
 import com.muneeb.parkinglot.enums.ParkingSpotStatus;
 import com.muneeb.parkinglot.enums.ParkingSpotType;
 import com.muneeb.parkinglot.enums.TicketStatus;
+import com.muneeb.parkinglot.exception.DuplicateResourceException;
+import com.muneeb.parkinglot.exception.ResourceNotFoundException;
 import com.muneeb.parkinglot.repository.ParkingSpotRepository;
 import com.muneeb.parkinglot.repository.TicketRepository;
 import com.muneeb.parkinglot.repository.VehicleRepository;
@@ -34,8 +36,8 @@ public class TicketServiceImpl  implements TicketService {
 
         // 1 fine vehicle
        Vehicle vehicle =  vehicleRepository
-                .findByVehicleNumber(request.getVehicleNumber())
-                .orElseThrow(()-> new RuntimeException("vehicle not found"));
+                .findById(request.getVehicleId())
+                .orElseThrow(()-> new ResourceNotFoundException("vehicle not found"));
 
        //check active ticket
        ticketRepository
@@ -43,34 +45,32 @@ public class TicketServiceImpl  implements TicketService {
                vehicle,
                TicketStatus.ACTIVE
        ).ifPresent(ticket -> {
-           throw  new RuntimeException("vehicle is already parked");
+           throw  new DuplicateResourceException("vehicle is already parked");
                });
 
        // 3 convert vehicleType -> parkingSpotType
-        ParkingSpotType spotType = switch (vehicle.getVehicleType()) {
+        ParkingSpotType requiredSpotType = switch (vehicle.getVehicleType()) {
             case CAR -> ParkingSpotType.CAR;
             case BIKE -> ParkingSpotType.BIKE;
             case TRUCK -> ParkingSpotType.TRUCK;
         };
 
             //4 FIND AVAILABLE SPOT
-            ParkingSpot spot = parkingSpotRepository
-                    .findBySpotTypeAndStatus(
-                            spotType,
-                            ParkingSpotStatus.AVAILABLE
-                    )
-                    .stream()
-                    .findFirst()
-                    .orElseThrow(()-> new RuntimeException("no parking spot availabel"));
-
+        ParkingSpot Spot = parkingSpotRepository
+                .findFirstBySpotTypeAndStatus(
+                        requiredSpotType,
+                        ParkingSpotStatus.AVAILABLE
+                )
+                .orElseThrow(() ->
+                        new ResourceNotFoundException("No parking spot available"));
         //5 occupy spot
-        spot.setStatus(ParkingSpotStatus.OCCUPIED);
-        parkingSpotRepository.save(spot);
+        Spot.setStatus(ParkingSpotStatus.OCCUPIED);
+        parkingSpotRepository.save(Spot);
 
         //6 create ticket
         Ticket ticket = Ticket.builder()
                 .vehicle(vehicle)
-                .parkingSpot(spot)
+                .parkingSpot(Spot)
                 .entryTime(LocalDateTime.now())
                 .status(TicketStatus.ACTIVE)
                 .build();

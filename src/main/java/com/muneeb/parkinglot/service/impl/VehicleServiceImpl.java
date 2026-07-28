@@ -3,6 +3,8 @@ package com.muneeb.parkinglot.service.impl;
 import com.muneeb.parkinglot.dto.request.CreateVehicleRequest;
 import com.muneeb.parkinglot.dto.response.VehicleResponse;
 import com.muneeb.parkinglot.entity.Vehicle;
+import com.muneeb.parkinglot.exception.DuplicateResourceException;
+import com.muneeb.parkinglot.exception.ResourceNotFoundException;
 import com.muneeb.parkinglot.repository.VehicleRepository;
 import com.muneeb.parkinglot.service.VehicleService;
 import lombok.RequiredArgsConstructor;
@@ -20,7 +22,7 @@ public class VehicleServiceImpl implements VehicleService {
     public VehicleResponse createVehicle(CreateVehicleRequest request) {
 
         if (vehicleRepository.existsByVehicleNumber(request.getVehicleNumber())) {
-            throw new RuntimeException("Vehicle already exists.");
+            throw new DuplicateResourceException("Vehicle already exists.");
         }
 
         Vehicle vehicle = Vehicle.builder()
@@ -38,7 +40,7 @@ public class VehicleServiceImpl implements VehicleService {
     public VehicleResponse getVehicleById(Long id) {
 
         Vehicle vehicle = vehicleRepository.findById(id)
-                .orElseThrow(() -> new RuntimeException("Vehicle not found."));
+                .orElseThrow(() -> new ResourceNotFoundException("Vehicle not found."));
 
         return mapToResponse(vehicle);
     }
@@ -56,7 +58,7 @@ public class VehicleServiceImpl implements VehicleService {
     public VehicleResponse updateVehicle(Long id, CreateVehicleRequest request) {
 
         Vehicle vehicle = vehicleRepository.findById(id)
-                .orElseThrow(() -> new RuntimeException("Vehicle not found."));
+                .orElseThrow(() -> new ResourceNotFoundException("Vehicle not found."));
 
         vehicle.setVehicleNumber(request.getVehicleNumber());
         vehicle.setOwnerName(request.getOwnerName());
@@ -71,7 +73,7 @@ public class VehicleServiceImpl implements VehicleService {
     public void deleteVehicle(Long id) {
 
         Vehicle vehicle = vehicleRepository.findById(id)
-                .orElseThrow(() -> new RuntimeException("Vehicle not found."));
+                .orElseThrow(() -> new ResourceNotFoundException("Vehicle not found."));
 
         vehicleRepository.delete(vehicle);
     }

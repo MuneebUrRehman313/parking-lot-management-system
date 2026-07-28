@@ -3,6 +3,8 @@ package com.muneeb.parkinglot.service.impl;
 import com.muneeb.parkinglot.dto.request.CreateParkingFloorRequest;
 import com.muneeb.parkinglot.dto.response.ParkingFloorResponse;
 import com.muneeb.parkinglot.entity.ParkingFloor;
+import com.muneeb.parkinglot.exception.DuplicateResourceException;
+import com.muneeb.parkinglot.exception.ResourceNotFoundException;
 import com.muneeb.parkinglot.repository.ParkingFloorRepository;
 import com.muneeb.parkinglot.service.ParkingFloorService;
 import lombok.RequiredArgsConstructor;
@@ -44,7 +46,7 @@ public class ParkingFloorServiceImpl implements ParkingFloorService {
 
        //check duplicate
        if(parkingFloorRepository.existsByFloorNumber(request.getFloorNumber())){
-           throw  new RuntimeException("floor already exists");
+           throw  new DuplicateResourceException("floor already exists");
        }
 
        ParkingFloor parkingFloor = ParkingFloor.builder()
@@ -74,7 +76,7 @@ public class ParkingFloorServiceImpl implements ParkingFloorService {
     public  ParkingFloorResponse getFloorById(Long id){
 
         ParkingFloor floor = parkingFloorRepository.findById(id)
-                .orElseThrow(()->new RuntimeException("floor not found"));
+                .orElseThrow(()->new ResourceNotFoundException("floor not found"));
 
         return mapToResponse(floor);
     }
@@ -100,7 +102,7 @@ public class ParkingFloorServiceImpl implements ParkingFloorService {
     public ParkingFloorResponse updateFloor(Long id, CreateParkingFloorRequest request) {
 
         ParkingFloor floor = parkingFloorRepository.findById(id)
-                .orElseThrow(() -> new RuntimeException("Floor not found"));
+                .orElseThrow(() -> new ResourceNotFoundException("Floor not found"));
 
         Optional<ParkingFloor> existingFloor =
                 parkingFloorRepository.findByFloorNumber(request.getFloorNumber());
@@ -108,7 +110,7 @@ public class ParkingFloorServiceImpl implements ParkingFloorService {
         if (existingFloor.isPresent()
                 && !existingFloor.get().getId().equals(id)) {
 
-            throw new RuntimeException("Floor number already exists.");
+            throw new DuplicateResourceException("Floor number already exists.");
         }
 
         floor.setFloorNumber(request.getFloorNumber());
@@ -123,7 +125,7 @@ public class ParkingFloorServiceImpl implements ParkingFloorService {
 
     public void deleteFloor(Long id){
         ParkingFloor parkingFloor = parkingFloorRepository.findById(id)
-                .orElseThrow(()->new RuntimeException("floor not found"));
+                .orElseThrow(()->new ResourceNotFoundException("floor not found"));
 
         parkingFloorRepository.delete(parkingFloor);
     }
