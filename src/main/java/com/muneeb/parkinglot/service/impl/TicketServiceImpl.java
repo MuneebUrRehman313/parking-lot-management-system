@@ -11,6 +11,7 @@ import com.muneeb.parkinglot.enums.TicketStatus;
 import com.muneeb.parkinglot.repository.ParkingSpotRepository;
 import com.muneeb.parkinglot.repository.TicketRepository;
 import com.muneeb.parkinglot.repository.VehicleRepository;
+import com.muneeb.parkinglot.service.FeeCalculationService;
 import com.muneeb.parkinglot.service.TicketService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
@@ -26,8 +27,9 @@ public class TicketServiceImpl  implements TicketService {
     private  final TicketRepository ticketRepository;
     private  final VehicleRepository vehicleRepository;
     private  final ParkingSpotRepository parkingSpotRepository;
+    private final FeeCalculationService feeCalculationService;
 
-// create ticker
+    // create ticker
     public TicketResponse createTicket(CreateTicketRequest request){
 
         // 1 fine vehicle
@@ -105,6 +107,12 @@ public class TicketServiceImpl  implements TicketService {
 
 
         ticket.setExitTime(LocalDateTime.now());
+
+        Double amount = feeCalculationService.calculateFee(ticket);
+
+        ticket.setAmount(amount);
+
+
         ticket.setStatus(TicketStatus.COMPLETED);
 
         ParkingSpot spot = ticket.getParkingSpot();
@@ -127,6 +135,7 @@ public class TicketServiceImpl  implements TicketService {
                 .spotNumber(ticket.getParkingSpot().getSpotNumber())
                 .entryTime(ticket.getEntryTime())
                 .exitTime(ticket.getExitTime())
+                .amount(ticket.getAmount())
                 .status(ticket.getStatus())
                 .build();
     }

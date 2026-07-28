@@ -20,5 +20,7 @@ public class TicketResponse {
 
     private LocalDateTime exitTime;
 
+    private Double amount;
+
     private TicketStatus status;
 }
