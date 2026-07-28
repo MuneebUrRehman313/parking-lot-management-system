@@ -17,6 +17,11 @@ public interface ParkingSpotRepository extends JpaRepository<ParkingSpot,Long> {
 //    Database me check karega ki ye spot already exist karta hai ya nahi.
     Optional<ParkingSpot> findBySpotNumber(String spotNumber);
 
+    Optional<ParkingSpot> findFirstBySpotAndStatus(
+            ParkingSpotType spotType,
+            ParkingSpotStatus status
+    );
+
     List<ParkingSpot> findBySpotTypeAndStatus(
             ParkingSpotType spotType,
             ParkingSpotStatus status
