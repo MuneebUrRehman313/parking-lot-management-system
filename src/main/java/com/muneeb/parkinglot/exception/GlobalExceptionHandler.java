@@ -81,18 +81,18 @@ public class GlobalExceptionHandler {
     }
 
 
-    @ExceptionHandler(MethodArgumentNotValidException.class)
-    public ResponseEntity<ValidationErrorResponse> handlevalidatonException(
-            MethodArgumentNotValidException ex,
-            HttpServletRequest request
-    ){
-
-        Map<String,String> errors = new HashMap<>();
-
-        ex.getBindingResult()
-                .getFieldErrors()
-                .forEach(error -> errors.put(error.getField(),error.getDefaultMessage()));
-
-        ValidationErrorResponse response = ValidationErrorResponse
-    }
+//    @ExceptionHandler(MethodArgumentNotValidException.class)
+//    public ResponseEntity<ValidationErrorResponse> handlevalidatonException(
+//            MethodArgumentNotValidException ex,
+//            HttpServletRequest request
+//    ){
+//
+//        Map<String,String> errors = new HashMap<>();
+//
+//        ex.getBindingResult()
+//                .getFieldErrors()
+//                .forEach(error -> errors.put(error.getField(),error.getDefaultMessage()));
+//
+//        ValidationErrorResponse response = ValidationErrorResponse ;
+//    }
 }
