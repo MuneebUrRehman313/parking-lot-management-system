@@ -1,29 +1,35 @@
 package com.muneeb.parkinglot.service.strategy;
 
 import com.muneeb.parkinglot.enums.VehicleType;
-import lombok.AllArgsConstructor;
+import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Component;
 
+import java.util.EnumMap;
+import java.util.List;
+import java.util.Map;
+
 @Component
-@AllArgsConstructor
 public class FeeCalculationFactory {
 
-    private final CarFeeStrategy carFeeStrategy;
-    private final BikeFeeStrategy bikeFeeStrategy;
-    private final TruckFeeStrategy truckFeeStrategy;
+    private final Map<VehicleType, FeeCalculationStrategy> strategyMap;
 
-    public FeeCalculationStrategy getStrategy(VehicleType vehicleType){
+    public FeeCalculationFactory(List<FeeCalculationStrategy> strategies) {
 
-        switch (vehicleType){
-            case CAR :
-                return carFeeStrategy;
-            case BIKE:
-                return bikeFeeStrategy;
-            case TRUCK:
-                return truckFeeStrategy;
-            default:
-                throw new RuntimeException("invalid vehicle type ");
+        strategyMap = new EnumMap<>(VehicleType.class);
+
+        for (FeeCalculationStrategy strategy : strategies) {
+            strategyMap.put(strategy.getVehicleType(), strategy);
         }
     }
 
+    public FeeCalculationStrategy getStrategy(VehicleType vehicleType) {
+
+        FeeCalculationStrategy strategy = strategyMap.get(vehicleType);
+
+        if (strategy == null) {
+            throw new RuntimeException("No strategy found for " + vehicleType);
+        }
+
+        return strategy;
+    }
 }

@@ -53,6 +53,7 @@ public class TicketServiceImpl  implements TicketService {
             case CAR -> ParkingSpotType.CAR;
             case BIKE -> ParkingSpotType.BIKE;
             case TRUCK -> ParkingSpotType.TRUCK;
+            case EV -> ParkingSpotType.EV;
         };
 
             //4 FIND AVAILABLE SPOT
