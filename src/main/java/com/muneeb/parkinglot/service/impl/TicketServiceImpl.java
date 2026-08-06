@@ -15,6 +15,7 @@ import com.muneeb.parkinglot.repository.TicketRepository;
 import com.muneeb.parkinglot.repository.VehicleRepository;
 import com.muneeb.parkinglot.service.FeeCalculationService;
 import com.muneeb.parkinglot.service.TicketService;
+import com.muneeb.parkinglot.service.factory.TicketFactory;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 
@@ -30,7 +31,7 @@ public class TicketServiceImpl  implements TicketService {
     private  final VehicleRepository vehicleRepository;
     private  final ParkingSpotRepository parkingSpotRepository;
     private final FeeCalculationService feeCalculationService;
-
+    private final TicketFactory ticketFactory;
     // create ticker
     public TicketResponse createTicket(CreateTicketRequest request){
 
@@ -69,12 +70,11 @@ public class TicketServiceImpl  implements TicketService {
         parkingSpotRepository.save(Spot);
 
         //6 create ticket
-        Ticket ticket = Ticket.builder()
-                .vehicle(vehicle)
-                .parkingSpot(Spot)
-                .entryTime(LocalDateTime.now())
-                .status(TicketStatus.ACTIVE)
-                .build();
+        ParkingSpot spot = null;
+        Ticket ticket = ticketFactory.createTicket(
+                vehicle,
+                spot
+        );
 
         Ticket savedTicket = ticketRepository.save(ticket);
 
