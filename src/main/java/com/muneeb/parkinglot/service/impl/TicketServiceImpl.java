@@ -1,5 +1,6 @@
 package com.muneeb.parkinglot.service.impl;
-
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import com.muneeb.parkinglot.dto.request.CreateTicketRequest;
 import com.muneeb.parkinglot.dto.response.TicketResponse;
 import com.muneeb.parkinglot.entity.ParkingSpot;
@@ -27,6 +28,7 @@ import java.util.List;
 @RequiredArgsConstructor
 public class TicketServiceImpl  implements TicketService {
 
+    private static final Logger logger = LoggerFactory.getLogger(TicketServiceImpl.class);
     private  final TicketRepository ticketRepository;
     private  final VehicleRepository vehicleRepository;
     private  final ParkingSpotRepository parkingSpotRepository;
@@ -35,10 +37,14 @@ public class TicketServiceImpl  implements TicketService {
     // create ticker
     public TicketResponse createTicket(CreateTicketRequest request){
 
+        logger.debug("creating ticket with vehicle id {}",request.getVehicleId());
         // 1 fine vehicle
        Vehicle vehicle =  vehicleRepository
                 .findById(request.getVehicleId())
-                .orElseThrow(()-> new ResourceNotFoundException("vehicle not found"));
+                .orElseThrow(()->{
+                  logger.warn("vehicle not found with vehicle id {}",request.getVehicleId());
+         return new ResourceNotFoundException("vehicle not found");
+                });
 
        //check active ticket
        ticketRepository
@@ -46,6 +52,7 @@ public class TicketServiceImpl  implements TicketService {
                vehicle,
                TicketStatus.ACTIVE
        ).ifPresent(ticket -> {
+           logger.warn("active ticket already exists for vehicle id:{}",vehicle.getId());
            throw  new DuplicateResourceException("vehicle is already parked");
                });
 
@@ -63,20 +70,33 @@ public class TicketServiceImpl  implements TicketService {
                         requiredSpotType,
                         ParkingSpotStatus.AVAILABLE
                 )
-                .orElseThrow(() ->
-                        new ResourceNotFoundException("No parking spot available"));
+                .orElseThrow(() ->{
+
+                    logger.warn(
+                            "No parking spot available for vehicle id: {} and required spot type: {}",
+                            vehicle.getId(),
+                            requiredSpotType
+                    );
+                      return  new ResourceNotFoundException("No parking spot available");});
         //5 occupy spot
         Spot.setStatus(ParkingSpotStatus.OCCUPIED);
         parkingSpotRepository.save(Spot);
 
+
         //6 create ticket
-        ParkingSpot spot = null;
+
         Ticket ticket = ticketFactory.createTicket(
                 vehicle,
-                spot
+                Spot
         );
 
         Ticket savedTicket = ticketRepository.save(ticket);
+        logger.info("ticket created succesfully with id :{} and vehicle and id  : {} and spot id {},and spotType {}",
+                savedTicket.getId(),
+                vehicle.getId(),
+                Spot.getId(),
+                Spot.getSpotType()
+                );
 
         return mapToResponse(savedTicket);
     }
@@ -85,6 +105,7 @@ public class TicketServiceImpl  implements TicketService {
 
     @Override
     public List<TicketResponse> getAllTickets() {
+       logger.debug("fetching all tickets");
         return ticketRepository
                 .findAll()
                 .stream()
@@ -96,7 +117,12 @@ public class TicketServiceImpl  implements TicketService {
 
     public TicketResponse getTicketById(Long id){
 
-            Ticket ticket =   ticketRepository.findById(id).orElseThrow(()-> new RuntimeException("ticket not found"));
+            logger.debug("fetching tickets by id {}",id);
+            Ticket ticket =   ticketRepository.findById(id).orElseThrow(()-> {
+
+                logger.warn("ticket not found with id {}",id);
+                 return new ResourceNotFoundException("ticket not found");
+            });
 
             return  mapToResponse(ticket);
 //        return  null;
@@ -104,23 +130,37 @@ public class TicketServiceImpl  implements TicketService {
 
     public TicketResponse completeTicket(Long id){
 
-        Ticket ticket = ticketRepository.findById(id).orElseThrow(()->new RuntimeException("ticket not found"));
+        logger.debug("fetching ticket for complete {} ",id);
+        Ticket ticket = ticketRepository.findById(id).orElseThrow(()->{
+
+            logger.warn("Ticket not found with id {}",id);
+           return new ResourceNotFoundException("ticket not found");
+        });
 
 
         ticket.setExitTime(LocalDateTime.now());
 
         Double amount = feeCalculationService.calculateFee(ticket);
-
+        logger.debug(
+                "Calculated parking fee for ticket id: {} is: {}",
+                ticket.getId(),
+                amount
+        );
         ticket.setAmount(amount);
 
 
         ticket.setStatus(TicketStatus.COMPLETED);
-
+        Vehicle vehicle = ticket.getVehicle();
         ParkingSpot spot = ticket.getParkingSpot();
         spot.setStatus(ParkingSpotStatus.AVAILABLE);
 
         parkingSpotRepository.save(spot);
         Ticket updataTicket = ticketRepository.save(ticket);
+
+        logger.info("ticket completed fully with id :{} and spot  id :{} and and vehicle id {} ",
+                updataTicket.getId(),
+                spot.getId(),
+                vehicle.getId());
 
         return mapToResponse(updataTicket);
 //        return  null;

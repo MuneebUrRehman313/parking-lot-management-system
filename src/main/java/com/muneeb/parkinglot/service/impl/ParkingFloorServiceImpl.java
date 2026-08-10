@@ -1,5 +1,7 @@
 package com.muneeb.parkinglot.service.impl;
 
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import com.muneeb.parkinglot.dto.request.CreateParkingFloorRequest;
 import com.muneeb.parkinglot.dto.response.ParkingFloorResponse;
 import com.muneeb.parkinglot.entity.ParkingFloor;
@@ -37,46 +39,57 @@ import java.util.Optional;
 @RequiredArgsConstructor
 public class ParkingFloorServiceImpl implements ParkingFloorService {
 
-    private  final ParkingFloorRepository parkingFloorRepository;
-
+    private final ParkingFloorRepository parkingFloorRepository;
+    private static final Logger logger = LoggerFactory.getLogger(ParkingFloorServiceImpl.class);
 
     //create floor
     @Override
-   public ParkingFloorResponse createFloor (CreateParkingFloorRequest request){
-
-       //check duplicate
-       if(parkingFloorRepository.existsByFloorNumber(request.getFloorNumber())){
-           throw  new DuplicateResourceException("floor already exists");
-       }
-
-       ParkingFloor parkingFloor = ParkingFloor.builder()
-               .floorNumber(request.getFloorNumber())
-               .name(request.getName())
-               .capacity(request.getCapacity())
-               .build();
-
-       ParkingFloor savedFloor = parkingFloorRepository.save(parkingFloor);
-
-       return  mapToResponse(savedFloor);
-   }
+    public ParkingFloorResponse createFloor(CreateParkingFloorRequest request) {
 
 
-   // get all floors
+        logger.debug("Creating floor with floor number: {}", request.getFloorNumber());
+        //check duplicate
+        if (parkingFloorRepository.existsByFloorNumber(request.getFloorNumber())) {
+            logger.warn("Floor already exists with this floorNumber {}",request.getFloorNumber());
+            throw new DuplicateResourceException("floor already exists");
+        }
+
+        ParkingFloor parkingFloor = ParkingFloor.builder()
+                .floorNumber(request.getFloorNumber())
+                .name(request.getName())
+                .capacity(request.getCapacity())
+                .build();
+
+        ParkingFloor savedFloor = parkingFloorRepository.save(parkingFloor);
+        logger.info("Floor created successfully with floor number : {} and with capacity {}",
+                savedFloor.getFloorNumber(),
+                savedFloor.getCapacity());
+
+        return mapToResponse(savedFloor);
+    }
+
+
+    // get all floors
     @Override
     public List<ParkingFloorResponse> getAllFloors() {
 
-       return parkingFloorRepository.findAll()
-               .stream()
-               .map(this::mapToResponse)
-               .toList();
+        logger.debug("fetching all floors");
+        return parkingFloorRepository.findAll()
+                .stream()
+                .map(this::mapToResponse)
+                .toList();
     }
 
     // get floor by id
 
-    public  ParkingFloorResponse getFloorById(Long id){
+    public ParkingFloorResponse getFloorById(Long id) {
 
+        logger.debug("fetching floor with floor id {}",id);
         ParkingFloor floor = parkingFloorRepository.findById(id)
-                .orElseThrow(()->new ResourceNotFoundException("floor not found"));
+                .orElseThrow(() -> {
+                        logger.warn("floor not found with floor id {}",id);
+                      return   new ResourceNotFoundException("floor not found");
+                });
 
         return mapToResponse(floor);
     }
@@ -101,15 +114,19 @@ public class ParkingFloorServiceImpl implements ParkingFloorService {
     @Override
     public ParkingFloorResponse updateFloor(Long id, CreateParkingFloorRequest request) {
 
+        logger.debug("Fetching floor for update with id {}",id);
         ParkingFloor floor = parkingFloorRepository.findById(id)
-                .orElseThrow(() -> new ResourceNotFoundException("Floor not found"));
+                .orElseThrow(() -> {
+                        logger.warn("Floor not found with floor id {}",id);
+                        return  new ResourceNotFoundException("Floor not found");
+    });
 
         Optional<ParkingFloor> existingFloor =
                 parkingFloorRepository.findByFloorNumber(request.getFloorNumber());
 
         if (existingFloor.isPresent()
                 && !existingFloor.get().getId().equals(id)) {
-
+            logger.warn("Vehicle already exists with id  {}",request.getFloorNumber());
             throw new DuplicateResourceException("Floor number already exists.");
         }
 
@@ -118,27 +135,38 @@ public class ParkingFloorServiceImpl implements ParkingFloorService {
         floor.setCapacity(request.getCapacity());
 
         ParkingFloor updatedFloor = parkingFloorRepository.save(floor);
+        logger.info("vehicle update successfully with id {},with floor number {}",
+                updatedFloor.getId(),
+                updatedFloor.getFloorNumber());
 
         return mapToResponse(updatedFloor);
     }
     // delete floor
 
-    public void deleteFloor(Long id){
+    public void deleteFloor(Long id) {
+
+       logger.debug("Fetching floor with floor id {}",id);
         ParkingFloor parkingFloor = parkingFloorRepository.findById(id)
-                .orElseThrow(()->new ResourceNotFoundException("floor not found"));
+
+                .orElseThrow(() -> {
+
+                    logger.warn("floor not found id {}",id);
+                    return new ResourceNotFoundException("floor not found");
+                });
 
         parkingFloorRepository.delete(parkingFloor);
+        logger.info("Floor deleted successfully with id: {}", id);
     }
 
     //covert entity to response
-    private ParkingFloorResponse mapToResponse(ParkingFloor floor){
+    private ParkingFloorResponse mapToResponse(ParkingFloor floor) {
 
-       return ParkingFloorResponse.builder()
-               .id(floor.getId())
-               .floorNumber((floor.getFloorNumber()))
-               .name(floor.getName())
-               .capacity(floor.getCapacity())
-               .build();
+        return ParkingFloorResponse.builder()
+                .id(floor.getId())
+                .floorNumber((floor.getFloorNumber()))
+                .name(floor.getName())
+                .capacity(floor.getCapacity())
+                .build();
     }
 
 }
